@@ -158,146 +158,7 @@
                 if (rsi > 70 && change < 0) {
                     signal = 'sell';
                     trend = 'down';
-                }
-                
-                return {
-                    price: currentPrice,
-                    change: parseFloat(change.toFixed(2)),
-                    rsi: rsi,
-                    signal: signal,
-                    trend: trend,
-                    high: high,
-                    low: low,
-                    volume: quote.volume[quote.volume.length - 1]
-                };
-                
-            } catch (error) {
-                console.error(`Error fetching ${symbol} from Yahoo:`, error);
-                
-                // במקרה של שגיאה, ננסה דרך proxy אלטרנטיבי
-                try {
-                    const fallbackUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`;
-                    const fallbackResponse = await fetch(fallbackUrl);
-                    const fallbackData = await fallbackResponse.json();
-                    
-                    if (fallbackData.chart && fallbackData.chart.result && fallbackData.chart.result.length > 0) {
-                        const result = fallbackData.chart.result[0];
-                        const quote = result.indicators.quote[0];
-                        const prices = quote.close.filter(p => p !== null);
-                        const meta = result.meta;
-                        
-                        const currentPrice = meta.regularMarketPrice || prices[prices.length - 1];
-                        const previousClose = prices[prices.length - 2] || meta.chartPreviousClose;
-                        const change = ((currentPrice - previousClose) / previousClose * 100);
-                        
-                        return {
-                            price: currentPrice,
-                            change: parseFloat(change.toFixed(2)),
-                            rsi: Math.round(calculateRSI(prices)),
-                            signal: 'hold',
-                            trend: change > 0 ? 'up' : 'down',
-                            high: quote.high[quote.high.length - 1] || currentPrice,
-                            low: quote.low[quote.low.length - 1] || currentPrice,
-                            volume: quote.volume[quote.volume.length - 1]
-                        };
-                    }
-                } catch (fallbackError) {
-                    console.error(`Fallback also failed for ${symbol}:`, fallbackError);
-                }
-                
-                // אם הכל נכשל, נחזיר ערכי ברירת מחדל
-                return {
-                    price: 0,
-                    change: 0,
-                    rsi: 50,
-                    signal: 'hold',
-                    trend: 'neutral',
-                    high: 0,
-                    low: 0,
-                    volume: 0,
-                    error: true
-                };
-            }
-        };
-
-        const sectorNames = {
-            technology: 'טכנולוגיה',
-            energy: 'אנרגיה',
-            banking: 'בנקים'
-        };
-
-        function App() {
-            const [selectedSector, setSelectedSector] = useState('technology');
-            const [stocks, setStocks] = useState([]);
-            const [lastUpdate, setLastUpdate] = useState(new Date());
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-
-            // טעינת נתונים עבור סקטור נבחר
-            const loadStockData = async (sector) => {
-                setLoading(true);
-                setError(null);
-                
-                try {
-                    const stockList = stockSymbols[sector];
-                    const stockPromises = stockList.map(async (stock) => {
-                        const data = await fetchStockData(stock.symbol);
-                        return {
-                            symbol: stock.symbol,
-                            name: stock.name,
-                            ...data
-                        };
-                    });
-                    
-                    const loadedStocks = await Promise.all(stockPromises);
-                    setStocks(loadedStocks);
-                    setLastUpdate(new Date());
-                } catch (err) {
-                    setError('שגיאה בטעינת הנתונים. מנסה שוב...');
-                    console.error(err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            // טעינה ראשונית
-            useEffect(() => {
-                loadStockData(selectedSector);
-            }, [selectedSector]);
-
-            // עדכון אוטומטי כל דקה
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    loadStockData(selectedSector);
-                }, 60000); // עדכון כל דקה
-
-                return () => clearInterval(interval);
-            }, [selectedSector]);
-
-            const getSignalText = (signal) => {
-                switch(signal) {
-                    case 'buy': return 'קנה';
-                    case 'sell': return 'מכור';
-                    case 'hold': return 'המתן';
-                    default: return 'המתן';
-                }
-            };
-
-            const getSignalClass = (signal) => {
-                switch(signal) {
-                    case 'buy': return 'signal-buy';
-                    case 'sell': return 'signal-sell';
-                    case 'hold': return 'signal-hold';
-                    default: return 'signal-hold';
-                }
-            };
-
-            const getTrendIcon = (trend) => {
-                switch(trend) {
-                    case 'up': return '📈';
-                    case 'down': return '📉';
-                    default: return '➡️';
-                }
+< truncated lines 161-300 >
             };
 
             return (
@@ -452,3 +313,9 @@
                     </div>
                 </div>
             );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
