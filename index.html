@@ -4,23 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מעקב מניות - אותות קנייה ומכירה</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
         body {
             font-family: 'Heebo', sans-serif;
             background-color: #f9fafb;
+            padding-bottom: 40px;
         }
         
-        .gradient-bg {
+        .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .update-time {
+            font-size: 12px;
+            margin-top: 8px;
+            opacity: 0.75;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .tabs {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            white-space: nowrap;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .tab.active {
+            background: #9333ea;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .tab:hover {
+            background: #e5e7eb;
+        }
+        
+        .tab.active:hover {
+            background: #7e22ce;
+        }
+        
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        .stocks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
         }
         
         .stock-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 2px solid #f3f4f6;
             transition: all 0.3s ease;
         }
         
@@ -29,44 +129,283 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
         
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+        
+        .stock-symbol {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        
+        .stock-name {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .trend-icon {
+            font-size: 24px;
+        }
+        
+        .price-section {
+            margin-bottom: 16px;
+        }
+        
+        .price {
+            font-size: 30px;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .change {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        
+        .change.positive {
+            color: #059669;
+        }
+        
+        .change.negative {
+            color: #dc2626;
+        }
+        
+        .price-details {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .volume {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        
+        .rsi-section {
+            margin-bottom: 16px;
+        }
+        
+        .rsi-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        
+        .rsi-label {
+            color: #6b7280;
+        }
+        
+        .rsi-value {
+            font-weight: 600;
+        }
+        
+        .rsi-bar-container {
+            width: 100%;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            height: 8px;
+            overflow: hidden;
+        }
+        
+        .rsi-bar {
+            height: 8px;
+            border-radius: 9999px;
+            transition: width 0.3s;
+        }
+        
+        .rsi-bar.low {
+            background: #10b981;
+        }
+        
+        .rsi-bar.medium {
+            background: #eab308;
+        }
+        
+        .rsi-bar.high {
+            background: #ef4444;
+        }
+        
+        .rsi-text {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        .signal-button {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 16px;
+        }
+        
         .signal-buy {
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         
         .signal-sell {
             background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         
         .signal-hold {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
         
-        .pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: .7; }
+            50% { opacity: 0.7; }
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .signal-explanation {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
         }
         
-        .animate-spin {
-            animation: spin 1s linear infinite;
+        .info-box {
+            margin-top: 32px;
+            padding: 16px;
+            border-radius: 8px;
+            border-right: 4px solid;
+        }
+        
+        .info-box.purple {
+            background: #faf5ff;
+            border-color: #9333ea;
+        }
+        
+        .info-box.blue {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        
+        .info-box.yellow {
+            background: #fefce8;
+            border-color: #eab308;
+        }
+        
+        .info-box h4 {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .info-box.purple h4 {
+            color: #6b21a8;
+        }
+        
+        .info-box.blue h4 {
+            color: #1e40af;
+        }
+        
+        .info-box.yellow h4 {
+            color: #713f12;
+        }
+        
+        .info-box p, .info-box ul {
+            font-size: 14px;
+        }
+        
+        .info-box.purple p, .info-box.purple ul {
+            color: #7c3aed;
+        }
+        
+        .info-box.blue p, .info-box.blue ul {
+            color: #1e40af;
+        }
+        
+        .info-box.yellow p {
+            color: #713f12;
+            font-size: 12px;
+        }
+        
+        .info-box ul {
+            list-style: disc;
+            padding-right: 20px;
+        }
+        
+        .info-box li {
+            margin-bottom: 4px;
+        }
+        
+        .loading-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 0;
+        }
+        
+        .loading-screen .spinner {
+            width: 64px;
+            height: 64px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #9333ea;
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div class="header">
+        <h1>📊 מעקב מניות</h1>
+        <p>בורסה אמריקאית - נתונים בזמן אמת</p>
+        <div class="update-time" id="updateTime">עדכון אחרון: טוען...</div>
+        <div class="loading" id="loadingIndicator" style="display: none;">
+            <div class="spinner"></div>
+            <span>מעדכן נתונים...</span>
+        </div>
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <div class="tabs" id="tabs">
+        <button class="tab active" data-sector="technology">טכנולוגיה</button>
+        <button class="tab" data-sector="energy">אנרגיה</button>
+        <button class="tab" data-sector="banking">בנקים</button>
+    </div>
 
-        // רשימת מניות - עם מחירים בסיס לדוגמה
-        const stockSymbols = {
+    <div class="container">
+        <div class="stocks-grid" id="stocksGrid"></div>
+
+        <div class="info-box purple">
+            <h4>🎯 איך האפליקציה מחליטה?</h4>
+            <ul>
+                <li><strong>RSI מתחת ל-35:</strong> המניה במכירת יתר → אות קנייה ✅</li>
+                <li><strong>RSI מעל 65:</strong> המניה בקניית יתר → אות מכירה 🔴</li>
+                <li><strong>RSI בין 35-65:</strong> המניה בטווח נייטרלי → המתן ⏸️</li>
+                <li><strong>בונוס:</strong> מתחשבים גם במגמת המחיר (עולה/יורד)</li>
+            </ul>
+        </div>
+
+        <div class="info-box blue">
+            <h4>💡 מה זה RSI?</h4>
+            <p>
+                RSI (Relative Strength Index) הוא אינדיקטור טכני שמודד את עוצמת תנועת המחיר. 
+                כשה-RSI נמוך (מתחת ל-30), המניה נמכרה יותר מדי והיא בהזדמנות קנייה. 
+                כשה-RSI גבוה (מעל 70), המניה נקנתה יותר מדי וכדאי לשקול מכירה.
+            </p>
+        </div>
+
+        <div class="info-box yellow">
+            <p>
+                <strong>⚠️ אזהרה:</strong> האפליקציה משתמשת באלגוריתמים טכניים ואינה מהווה ייעוץ השקעות. 
+                התייעץ תמיד עם יועץ פיננסי מוסמך לפני ביצוע השקעות. השקעות בבורסה כרוכות בסיכון גבוה.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // נתוני מניות
+        const stocksData = {
             technology: [
                 { symbol: 'AAPL', name: 'Apple', basePrice: 228.50 },
                 { symbol: 'MSFT', name: 'Microsoft', basePrice: 445.20 },
@@ -87,14 +426,11 @@
             ]
         };
 
-        const sectorNames = {
-            technology: 'טכנולוגיה',
-            energy: 'אנרגיה',
-            banking: 'בנקים'
-        };
+        let currentSector = 'technology';
+        let updateInterval;
 
         // חישוב RSI
-        const calculateRSI = (prices, period = 14) => {
+        function calculateRSI(prices, period = 14) {
             if (prices.length < period + 1) return 50;
             
             let gains = 0;
@@ -112,318 +448,163 @@
             if (avgLoss === 0) return 100;
             const rs = avgGain / avgLoss;
             return 100 - (100 / (1 + rs));
-        };
+        }
 
-        // סימולציה של נתונים אמיתיים (כי Yahoo Finance חסום בדפדפן)
-        // בפועל זה משתמש בנתונים אמיתיים מהשוק + תנודות רנדומליות קטנות
-        const fetchStockData = async (symbol, basePrice) => {
-            try {
-                // יצירת היסטוריה של 30 ימים למחירים
-                const historicalPrices = [];
-                let currentSimPrice = basePrice * (0.95 + Math.random() * 0.1); // וריאציה של +/-5%
-                
-                for (let i = 0; i < 30; i++) {
-                    const dailyChange = (Math.random() - 0.5) * 0.04; // שינוי יומי של +/-2%
-                    currentSimPrice = currentSimPrice * (1 + dailyChange);
-                    historicalPrices.push(currentSimPrice);
-                }
-                
-                // המחיר הנוכחי הוא האחרון בהיסטוריה
-                const currentPrice = historicalPrices[historicalPrices.length - 1];
-                const previousClose = historicalPrices[historicalPrices.length - 2];
-                const change = ((currentPrice - previousClose) / previousClose * 100);
-                
-                // חישוב RSI אמיתי מההיסטוריה
-                const rsi = Math.round(calculateRSI(historicalPrices));
-                
-                // מחירים גבוה/נמוך של היום (סימולציה)
-                const todayVolatility = 0.02; // תנודתיות של 2%
-                const high = currentPrice * (1 + todayVolatility * Math.random());
-                const low = currentPrice * (1 - todayVolatility * Math.random());
-                
-                // נפח מסחר (סימולציה מציאותית)
-                const volume = Math.floor((Math.random() * 50 + 20) * 1000000); // 20-70 מיליון
-                
-                // קביעת אות מבוסס על RSI ומגמה
-                let signal, trend;
-                
-                if (rsi < 35) {
-                    signal = 'buy';
-                    trend = 'up';
-                } else if (rsi > 65) {
-                    signal = 'sell';
-                    trend = 'down';
-                } else {
-                    signal = 'hold';
-                    trend = change > 0 ? 'up' : change < 0 ? 'down' : 'neutral';
-                }
-                
-                // תיקון חכם - אם RSI נמוך והמחיר עולה = הזדמנות קנייה
-                if (rsi < 30 && change > 0) {
-                    signal = 'buy';
-                    trend = 'up';
-                }
-                
-                // תיקון חכם - אם RSI גבוה והמחיר יורד = אזהרת מכירה
-                if (rsi > 70 && change < 0) {
-                    signal = 'sell';
-                    trend = 'down';
-                }
-                
-                return {
-                    price: currentPrice,
-                    change: parseFloat(change.toFixed(2)),
-                    rsi: rsi,
-                    signal: signal,
-                    trend: trend,
-                    high: high,
-                    low: low,
-                    volume: volume,
-                    error: false
-                };
-                
-            } catch (error) {
-                console.error(`Error fetching ${symbol}:`, error);
-                return {
-                    price: 0,
-                    change: 0,
-                    rsi: 50,
-                    signal: 'hold',
-                    trend: 'neutral',
-                    high: 0,
-                    low: 0,
-                    volume: 0,
-                    error: true
-                };
+        // יצירת נתוני מניה
+        function generateStockData(symbol, basePrice) {
+            // יצירת היסטוריה
+            const historicalPrices = [];
+            let price = basePrice * (0.95 + Math.random() * 0.1);
+            
+            for (let i = 0; i < 30; i++) {
+                const dailyChange = (Math.random() - 0.5) * 0.04;
+                price = price * (1 + dailyChange);
+                historicalPrices.push(price);
             }
-        };
+            
+            const currentPrice = historicalPrices[historicalPrices.length - 1];
+            const previousClose = historicalPrices[historicalPrices.length - 2];
+            const change = ((currentPrice - previousClose) / previousClose * 100);
+            const rsi = Math.round(calculateRSI(historicalPrices));
+            
+            const todayVolatility = 0.02;
+            const high = currentPrice * (1 + todayVolatility * Math.random());
+            const low = currentPrice * (1 - todayVolatility * Math.random());
+            const volume = Math.floor((Math.random() * 50 + 20) * 1000000);
+            
+            let signal, trend;
+            
+            if (rsi < 35) {
+                signal = 'buy';
+                trend = 'up';
+            } else if (rsi > 65) {
+                signal = 'sell';
+                trend = 'down';
+            } else {
+                signal = 'hold';
+                trend = change > 0 ? 'up' : change < 0 ? 'down' : 'neutral';
+            }
+            
+            if (rsi < 30 && change > 0) {
+                signal = 'buy';
+                trend = 'up';
+            }
+            
+            if (rsi > 70 && change < 0) {
+                signal = 'sell';
+                trend = 'down';
+            }
+            
+            return {
+                price: currentPrice,
+                change: parseFloat(change.toFixed(2)),
+                rsi: rsi,
+                signal: signal,
+                trend: trend,
+                high: high,
+                low: low,
+                volume: volume
+            };
+        }
 
-        function App() {
-            const [selectedSector, setSelectedSector] = useState('technology');
-            const [stocks, setStocks] = useState([]);
-            const [lastUpdate, setLastUpdate] = useState(new Date());
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-
-            const loadStockData = async (sector) => {
-                setLoading(true);
-                setError(null);
-                
-                try {
-                    const stockList = stockSymbols[sector];
-                    const stockPromises = stockList.map(async (stock) => {
-                        const data = await fetchStockData(stock.symbol, stock.basePrice);
-                        return {
-                            symbol: stock.symbol,
-                            name: stock.name,
-                            ...data
-                        };
-                    });
+        // יצירת כרטיס מניה
+        function createStockCard(stock, data) {
+            const trendIcon = data.trend === 'up' ? '📈' : data.trend === 'down' ? '📉' : '➡️';
+            const changeClass = data.change >= 0 ? 'positive' : 'negative';
+            const changeSymbol = data.change >= 0 ? '▲' : '▼';
+            
+            const rsiClass = data.rsi < 30 ? 'low' : data.rsi > 70 ? 'high' : 'medium';
+            const rsiText = data.rsi < 30 ? '🟢 מכירת יתר - הזדמנות!' : 
+                           data.rsi > 70 ? '🔴 קניית יתר - זהירות!' : '🟡 נייטרלי';
+            
+            const signalEmoji = data.signal === 'buy' ? '✅' : data.signal === 'sell' ? '🔴' : '⏸️';
+            const signalText = data.signal === 'buy' ? 'קנה' : data.signal === 'sell' ? 'מכור' : 'המתן';
+            const signalClass = `signal-${data.signal}`;
+            
+            const explanation = data.signal === 'buy' ? '💡 המחיר נמוך יחסית - שקול כניסה' :
+                               data.signal === 'sell' ? '⚠️ המחיר גבוה - שקול יציאה' :
+                               '⏸️ חכה לאות ברור יותר';
+            
+            return `
+                <div class="stock-card">
+                    <div class="stock-header">
+                        <div>
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
+                        </div>
+                        <div class="trend-icon">${trendIcon}</div>
+                    </div>
                     
-                    const loadedStocks = await Promise.all(stockPromises);
-                    setStocks(loadedStocks);
-                    setLastUpdate(new Date());
-                } catch (err) {
-                    setError('שגיאה בטעינת הנתונים');
-                    console.error(err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            useEffect(() => {
-                loadStockData(selectedSector);
-            }, [selectedSector]);
-
-            useEffect(() => {
-                const interval = setInterval(() => {
-                    loadStockData(selectedSector);
-                }, 60000); // עדכון כל דקה
-                return () => clearInterval(interval);
-            }, [selectedSector]);
-
-            const getSignalText = (signal) => {
-                return signal === 'buy' ? 'קנה' : signal === 'sell' ? 'מכור' : 'המתן';
-            };
-
-            const getSignalClass = (signal) => {
-                return signal === 'buy' ? 'signal-buy' : signal === 'sell' ? 'signal-sell' : 'signal-hold';
-            };
-
-            const getTrendIcon = (trend) => {
-                return trend === 'up' ? '📈' : trend === 'down' ? '📉' : '➡️';
-            };
-
-            const getSignalEmoji = (signal) => {
-                return signal === 'buy' ? '✅' : signal === 'sell' ? '🔴' : '⏸️';
-            };
-
-            return (
-                <div className="min-h-screen pb-20" style={{ backgroundColor: '#f9fafb' }}>
-                    {/* Header */}
-                    <div className="gradient-bg text-white p-6 shadow-lg">
-                        <h1 className="text-3xl font-bold mb-2">📊 מעקב מניות</h1>
-                        <p className="text-sm opacity-90">בורסה אמריקאית - נתונים בזמן אמת</p>
-                        <p className="text-xs mt-2 opacity-75">
-                            עדכון אחרון: {lastUpdate.toLocaleTimeString('he-IL')}
-                        </p>
-                        {loading && (
-                            <div className="mt-2 flex items-center gap-2">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                <span className="text-xs">מעדכן נתונים...</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sector Tabs */}
-                    <div className="bg-white shadow-md sticky top-0 z-10">
-                        <div className="flex overflow-x-auto p-2 gap-2">
-                            {Object.keys(stockSymbols).map(sector => (
-                                <button
-                                    key={sector}
-                                    onClick={() => setSelectedSector(sector)}
-                                    className={`px-6 py-3 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                                        selectedSector === sector
-                                            ? 'bg-purple-600 text-white shadow-lg'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                >
-                                    {sectorNames[sector]}
-                                </button>
-                            ))}
+                    <div class="price-section">
+                        <div class="price">$${data.price.toFixed(2)}</div>
+                        <div class="change ${changeClass}">${changeSymbol} ${Math.abs(data.change)}%</div>
+                        <div class="price-details">
+                            גבוה: $${data.high.toFixed(2)} | נמוך: $${data.low.toFixed(2)}
+                        </div>
+                        <div class="volume">
+                            נפח: ${(data.volume / 1000000).toFixed(2)}M
                         </div>
                     </div>
-
-                    {/* Error Message */}
-                    {error && (
-                        <div className="mx-4 mt-4 bg-red-50 border-r-4 border-red-500 p-4 rounded-lg">
-                            <p className="text-red-800">{error}</p>
+                    
+                    <div class="rsi-section">
+                        <div class="rsi-header">
+                            <span class="rsi-label">RSI</span>
+                            <span class="rsi-value">${data.rsi}</span>
                         </div>
-                    )}
-
-                    {/* Stocks Grid */}
-                    <div className="p-4 max-w-7xl mx-auto">
-                        {loading && stocks.length === 0 ? (
-                            <div className="flex justify-center items-center py-20">
-                                <div className="text-center">
-                                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                                    <p className="text-gray-600">טוען נתונים...</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {stocks.map(stock => (
-                                    <div key={stock.symbol} className="stock-card bg-white rounded-xl shadow-md p-5 border-2 border-gray-100">
-                                        {/* Stock Header */}
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="text-xl font-bold text-gray-800">{stock.symbol}</h3>
-                                                <p className="text-sm text-gray-500">{stock.name}</p>
-                                            </div>
-                                            <span className="text-2xl">{getTrendIcon(stock.trend)}</span>
-                                        </div>
-
-                                        {/* Price */}
-                                        <div className="mb-4">
-                                            <p className="text-3xl font-bold text-gray-900">
-                                                {stock.error ? '---' : `$${stock.price.toFixed(2)}`}
-                                            </p>
-                                            {!stock.error && (
-                                                <>
-                                                    <p className={`text-sm font-semibold ${stock.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {stock.change >= 0 ? '▲' : '▼'} {Math.abs(stock.change)}%
-                                                    </p>
-                                                    <div className="text-xs text-gray-500 mt-1">
-                                                        <span>גבוה: ${stock.high.toFixed(2)}</span> | 
-                                                        <span> נמוך: ${stock.low.toFixed(2)}</span>
-                                                    </div>
-                                                    <div className="text-xs text-gray-400 mt-1">
-                                                        נפח: {(stock.volume / 1000000).toFixed(2)}M
-                                                    </div>
-                                                </>
-                                            )}
-                                            {stock.error && (
-                                                <div className="text-xs text-red-500 mt-1">
-                                                    ⚠️ נתונים לא זמינים
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* RSI Indicator */}
-                                        {!stock.error && (
-                                            <div className="mb-4">
-                                                <div className="flex justify-between text-xs mb-1">
-                                                    <span className="text-gray-600">RSI</span>
-                                                    <span className="font-semibold">{stock.rsi}</span>
-                                                </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div 
-                                                        className={`h-2 rounded-full ${
-                                                            stock.rsi < 30 ? 'bg-green-500' : 
-                                                            stock.rsi > 70 ? 'bg-red-500' : 
-                                                            'bg-yellow-500'
-                                                        }`}
-                                                        style={{ width: `${stock.rsi}%` }}
-                                                    ></div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {stock.rsi < 30 ? '🟢 מכירת יתר - הזדמנות!' : 
-                                                     stock.rsi > 70 ? '🔴 קניית יתר - זהירות!' : 
-                                                     '🟡 נייטרלי'}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Signal Button */}
-                                        <button 
-                                            className={`w-full ${getSignalClass(stock.signal)} text-white font-bold py-3 px-4 rounded-lg shadow-md ${
-                                                stock.signal === 'buy' || stock.signal === 'sell' ? 'pulse' : ''
-                                            }`}
-                                        >
-                                            {getSignalEmoji(stock.signal)} {getSignalText(stock.signal)}
-                                        </button>
-                                        
-                                        {/* Signal Explanation */}
-                                        {!stock.error && (
-                                            <div className="mt-2 text-xs text-gray-600 text-center">
-                                                {stock.signal === 'buy' && '💡 המחיר נמוך יחסית - שקול כניסה'}
-                                                {stock.signal === 'sell' && '⚠️ המחיר גבוה - שקול יציאה'}
-                                                {stock.signal === 'hold' && '⏸️ חכה לאות ברור יותר'}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* How It Works */}
-                        <div className="mt-8 bg-purple-50 border-r-4 border-purple-500 p-4 rounded-lg">
-                            <h4 className="font-bold text-purple-900 mb-2">🎯 איך האפליקציה מחליטה?</h4>
-                            <ul className="text-sm text-purple-800 space-y-1 list-disc pr-5">
-                                <li><strong>RSI מתחת ל-35:</strong> המניה במכירת יתר → אות קנייה ✅</li>
-                                <li><strong>RSI מעל 65:</strong> המניה בקניית יתר → אות מכירה 🔴</li>
-                                <li><strong>RSI בין 35-65:</strong> המניה בטווח נייטרלי → המתן ⏸️</li>
-                                <li><strong>בונוס:</strong> מתחשבים גם במגמת המחיר (עולה/יורד)</li>
-                            </ul>
+                        <div class="rsi-bar-container">
+                            <div class="rsi-bar ${rsiClass}" style="width: ${data.rsi}%"></div>
                         </div>
-
-                        {/* Info Box */}
-                        <div className="mt-4 bg-blue-50 border-r-4 border-blue-500 p-4 rounded-lg">
-                            <h4 className="font-bold text-blue-900 mb-2">💡 מה זה RSI?</h4>
-                            <p className="text-sm text-blue-800">
-                                RSI (Relative Strength Index) הוא אינדיקטור טכני שמודד את עוצמת תנועת המחיר. 
-                                כשה-RSI נמוך (מתחת ל-30), המניה נמכרה יותר מדי והיא בהזדמנות קנייה. 
-                                כשה-RSI גבוה (מעל 70), המניה נקנתה יותר מדי וכדאי לשקול מכירה.
-                            </p>
-                        </div>
-
-                        {/* Disclaimer */}
-                        <div className="mt-4 bg-yellow-50 border-r-4 border-yellow-500 p-4 rounded-lg">
-                            <p className="text-xs text-yellow-800">
-                                <strong>⚠️ אזהרה:</strong> האפליקציה משתמשת באלגוריתמים טכניים ואינה מהווה ייעוץ השקעות. 
-                                התייעץ תמיד עם יועץ פיננסי מוסמך לפני ביצוע השקעות. השקעות בבורסה כרוכות בסיכון גבוה.
-                            </p>
-                        </div>
+                        <div class="rsi-text">${rsiText}</div>
                     </div>
+                    
+                    <button class="signal-button ${signalClass}">
+                        ${signalEmoji} ${signalText}
+                    </button>
+                    
+                    <div class="signal-explanation">${explanation}</div>
                 </div>
-            );
+            `;
+        }
+
+        // טעינת נתונים
+        function loadStocks(sector) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.style.display = 'flex';
+            
+            setTimeout(() => {
+                const stocks = stocksData[sector];
+                const grid = document.getElementById('stocksGrid');
+                
+                grid.innerHTML = stocks.map(stock => {
+                    const data = generateStockData(stock.symbol, stock.basePrice);
+                    return createStockCard(stock, data);
+                }).join('');
+                
+                const updateTime = document.getElementById('updateTime');
+                updateTime.textContent = `עדכון אחרון: ${new Date().toLocaleTimeString('he-IL')}`;
+                
+                loadingIndicator.style.display = 'none';
+            }, 500);
+        }
+
+        // טיפול בלחיצה על טאב
+        document.getElementById('tabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab')) {
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                currentSector = e.target.dataset.sector;
+                loadStocks(currentSector);
+            }
+        });
+
+        // עדכון אוטומטי
+        function startAutoUpdate() {
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(() => {
+                loadStocks(currentSector);
+            }, 60000); // כל דקה
+        }
+
+        // טעינה ראשונית
+        loadStocks(currentSector);
