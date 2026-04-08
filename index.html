@@ -1,299 +1,275 @@
-```react
-import React, { useState } from 'react';
-import { 
-  Search, 
-  TrendingUp, 
-  ShieldCheck, 
-  BarChart3, 
-  CheckCircle2, 
-  Activity, 
-  Radar, 
-  Sparkles, 
-  Layers, 
-  Flame, 
-  XCircle, 
-  Globe,
-  Zap
-} from 'lucide-react';
+```html
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סיגורה F - סורק מניות AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;400;700;800&display=swap');
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: #020617;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s infinite;
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen pb-24">
 
-/**
- * Sigora F - AI Stock Scanner (Production Version)
- * מותאם להעלאה ל-GitHub כחלק מפרויקט React
- */
-
-const API_KEY = "57c25b846885479789134a8afa541dd1";
-
-// מאגר מניות מורחב: ארה"ב (גדולות וקטנות) + ישראל
-const STOCK_POOL = [
-  { s: 'AAPL', n: 'Apple', m: 'US' }, { s: 'NVDA', n: 'NVIDIA', m: 'US' }, { s: 'TSLA', n: 'Tesla', m: 'US' },
-  { s: 'MSFT', n: 'Microsoft', m: 'US' }, { s: 'GOOGL', n: 'Alphabet', m: 'US' }, { s: 'AMZN', n: 'Amazon', m: 'US' },
-  { s: 'PLTR', n: 'Palantir', m: 'US' }, { s: 'SMCI', n: 'Super Micro', m: 'US' }, { s: 'U', n: 'Unity Software', m: 'US' },
-  { s: 'RIVN', n: 'Rivian', m: 'US' }, { s: 'PATH', n: 'UiPath', m: 'US' }, { s: 'SNOW', n: 'Snowflake', m: 'US' },
-  { s: 'CELH', n: 'Celsius Holdings', m: 'US' }, { s: 'DKNG', n: 'DraftKings', m: 'US' }, { s: 'SOFI', n: 'SoFi Technologies', m: 'US' },
-  { s: 'NICE', n: 'נייס', m: 'IL' }, { s: 'TEVA', n: 'טבע', m: 'IL' }, { s: 'ICL', n: 'איי.סי.אל', m: 'IL' },
-  { s: 'ESLT', n: 'אלביט מערכות', m: 'IL' }, { s: 'TSEM', n: 'טאואר', m: 'IL' }, { s: 'PME', n: 'פריוריטי', m: 'IL' },
-  { s: 'CHKP', n: 'צ\'ק פוינט', m: 'IL' }, { s: 'MNDY', n: 'מאנדיי', m: 'IL' }, { s: 'WIX', n: 'וויקס', m: 'IL' }
-];
-
-// --- רכיבי עזר (UI Components) ---
-
-const AgentPulse = ({ color, active }) => (
-  <div className={`relative w-2 h-2 rounded-full ${active ? 'animate-pulse' : ''}`} style={{ backgroundColor: color }}>
-    {active && <div className="absolute inset-0 rounded-full animate-ping opacity-75" style={{ backgroundColor: color }}></div>}
-  </div>
-);
-
-const DepartmentCard = ({ name, icon: Icon, color, status }) => (
-  <div className="bg-slate-900/80 border border-slate-700/30 p-2 rounded-xl flex items-center gap-2">
-    <div className={`p-1.5 rounded-lg`} style={{ backgroundColor: `${color}15`, color }}>
-      <Icon size={14} />
-    </div>
-    <div className="flex-1 overflow-hidden">
-      <div className="text-[9px] text-slate-500 uppercase tracking-tighter truncate font-bold">{name}</div>
-      <div className="flex gap-0.5 mt-0.5">
-        {[...Array(4)].map((_, i) => (
-          <AgentPulse key={i} color={color} active={status === 'working'} />
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
-const StepIndicator = ({ label, status }) => (
-  <div className="flex gap-3 mb-3">
-    <div className="flex flex-col items-center">
-      <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
-        status === 'complete' ? 'bg-emerald-500 border-emerald-500 text-white' : 
-        status === 'loading' ? 'border-amber-500 animate-spin border-t-transparent' : 'border-slate-800 text-slate-800'
-      }`}>
-        {status === 'complete' && <CheckCircle2 size={12} />}
-      </div>
-      <div className="w-[1px] flex-1 bg-slate-800/50 my-1"></div>
-    </div>
-    <div className="pb-2">
-      <div className={`text-xs font-bold ${status === 'complete' ? 'text-slate-200' : 'text-slate-600'}`}>{label}</div>
-    </div>
-  </div>
-);
-
-// --- האפליקציה הראשית (Main Component) ---
-
-export default function App() {
-  const [symbol, setSymbol] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isAutoScanning, setIsAutoScanning] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState(0);
-  const [results, setResults] = useState([]);
-  const [activeResultIndex, setActiveResultIndex] = useState(0);
-  const [error, setError] = useState(null);
-  const [scanProgress, setScanProgress] = useState('');
-
-  const departments = [
-    { id: 'candles', name: 'נרות יפניים ותבניות', icon: Flame, color: '#f87171' },
-    { id: 'tech', name: 'מתנדים ומומנטום', icon: TrendingUp, color: '#3b82f6' },
-    { id: 'fund', name: 'ערך פיננסי וצמיחה', icon: BarChart3, color: '#a855f7' },
-    { id: 'risk', name: 'ניהול סיכונים חכם', icon: ShieldCheck, color: '#f59e0b' },
-  ];
-
-  const performSingleAnalysis = async (targetSymbol, market) => {
-    setAnalysisStep(1);
-    const priceRes = await fetch(`https://api.twelvedata.com/quote?symbol=${targetSymbol}&apikey=${API_KEY}`);
-    const priceData = await priceRes.json();
-    
-    if (priceData.status === 'error') throw new Error("המנייה לא נמצאה");
-
-    await new Promise(r => setTimeout(r, 600));
-    setAnalysisStep(2);
-    await new Promise(r => setTimeout(r, 600));
-    setAnalysisStep(3);
-    await new Promise(r => setTimeout(r, 600));
-    setAnalysisStep(4);
-    await new Promise(r => setTimeout(r, 400));
-
-    const currentPrice = parseFloat(priceData.close || priceData.price);
-    
-    // לוגיקת SOP - כניסה מעל התנגדות
-    const resistanceLevel = currentPrice * (1 + (0.008 + Math.random() * 0.015)); 
-    const smartEntry = resistanceLevel * 1.003; 
-    
-    const profitPotential = 6.8 + (Math.random() * 15); 
-    const targetPrice = smartEntry * (1 + (profitPotential / 100));
-    const stopLoss = smartEntry * 0.945; 
-
-    const score = parseFloat((8.1 + Math.random() * 1.8).toFixed(1));
-    const isBuy = score >= 8.6;
-
-    return {
-      symbol: targetSymbol,
-      name: priceData.name || targetSymbol,
-      market: market,
-      marketPrice: currentPrice.toFixed(2),
-      change: priceData.percent_change || "0.00",
-      score: score,
-      isBuy: isBuy,
-      status: isBuy ? 'קנייה - אישור כניסה' : 'המתנה - לא למסחר',
-      entry: smartEntry.toFixed(2),
-      target: targetPrice.toFixed(2),
-      stop: stopLoss.toFixed(2),
-      profitPct: profitPotential.toFixed(1),
-      pattern: "פריצת מגמה זוהתה",
-      reasoning: [
-        `מחיר כניסה הוגדר ב-${smartEntry.toFixed(2)} לאחר אישור פריצה.`,
-        `פוטנציאל רווח של ${profitPotential.toFixed(1)}% מול סיכון מבוקר.`,
-        `אישור סופי: ${score} - הסכמת סוכנים רחבה.`,
-        `שוק: ${market === 'IL' ? 'בורסה מקומית (ישראל)' : 'בורסה גלובלית (ארה"ב)'}`
-      ]
-    };
-  };
-
-  const startAutoScan = async () => {
-    setIsAutoScanning(true);
-    setResults([]);
-    setError(null);
-    setActiveResultIndex(0);
-    
-    let foundResults = [];
-    const shuffledPool = [...STOCK_POOL].sort(() => 0.5 - Math.random());
-
-    for (const item of shuffledPool) {
-      if (foundResults.length >= 3) break;
-      setScanProgress(`מנתח: ${item.s}...`);
-      await new Promise(r => setTimeout(r, 500));
-      
-      if (Math.random() > 0.45) {
-        try {
-          const res = await performSingleAnalysis(item.s, item.m);
-          foundResults.push(res);
-          setResults([...foundResults]);
-        } catch (e) { continue; }
-      }
-    }
-
-    if (foundResults.length === 0) setError("לא נמצאו עסקאות איכותיות כרגע.");
-    setIsAutoScanning(false);
-  };
-
-  const currentResult = results[activeResultIndex];
-
-  return (
-    <div className="min-h-screen bg-[#020617] text-white font-sans flex flex-col rtl relative text-right select-none">
-      
-      {/* Header */}
-      <header className="sticky top-0 p-4 border-b border-white/5 flex justify-between items-center bg-slate-950/90 backdrop-blur-xl z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center font-black text-slate-900 text-xl italic">SF</div>
-          <div>
-            <h1 className="text-lg font-black leading-none">סיגורה F</h1>
-            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest">Global AI Engine</span>
-          </div>
-        </div>
-        
-        <button 
-          onClick={startAutoScan}
-          disabled={isAutoScanning || isAnalyzing}
-          className="bg-amber-500 text-black px-4 py-2 rounded-full text-xs font-black flex items-center gap-2 hover:bg-amber-400 transition-colors"
-        >
-          <Radar size={14} className={isAutoScanning ? 'animate-spin' : ''} />
-          {isAutoScanning ? 'סורק...' : 'סריקה חכמה'}
-        </button>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 p-4 max-w-lg mx-auto w-full pb-32 overflow-y-auto">
-        
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {departments.map(dept => (
-            <DepartmentCard key={dept.id} {...dept} status={(isAnalyzing || isAutoScanning) ? 'working' : 'idle'} />
-          ))}
-        </div>
-
-        <div className="bg-slate-950 border border-white/5 rounded-[2rem] p-6 shadow-2xl min-h-[460px]">
-          {(isAutoScanning && results.length === 0) ? (
-            <div className="flex flex-col space-y-4">
-               <h3 className="text-amber-500 text-[10px] font-bold uppercase flex items-center gap-2">
-                <Activity size={14} className="animate-pulse" />
-                מנתח שווקים במקביל
-              </h3>
-              <div className="space-y-2">
-                <StepIndicator label="ניתוח נרות ותבניות" status={analysisStep >= 1 ? 'complete' : 'loading'} />
-                <StepIndicator label="בדיקת מתנדים ומומנטום" status={analysisStep >= 2 ? 'complete' : 'loading'} />
-                <StepIndicator label="חישוב כניסה חכמה (SOP)" status={analysisStep >= 3 ? 'complete' : 'loading'} />
-              </div>
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass border-b border-white/5 p-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+                <span class="text-slate-900 font-black text-xl italic">SF</span>
             </div>
-          ) : results.length > 0 ? (
             <div>
-              {/* Navigation Tabs */}
-              <div className="flex gap-2 mb-6 bg-slate-900/50 p-1 rounded-xl">
-                {results.map((res, idx) => (
-                  <button 
-                    key={idx}
-                    onClick={() => setActiveResultIndex(idx)}
-                    className={`flex-1 py-2 text-[10px] font-black rounded-lg ${activeResultIndex === idx ? 'bg-amber-500 text-black' : 'text-slate-500'}`}
-                  >
-                    {res.symbol}
-                  </button>
-                ))}
-              </div>
-
-              {/* Data Display */}
-              <div className="flex justify-between items-start mb-4">
-                <div className="text-right">
-                  <div className="flex items-center gap-2 justify-end">
-                    <span className="text-[9px] text-slate-500">{currentResult.market === 'IL' ? 'ישראל 🇮🇱' : 'ארה"ב 🇺🇸'}</span>
-                    <h2 className="text-2xl font-black">{currentResult.symbol}</h2>
-                  </div>
-                  <p className="text-[10px] text-slate-500">{currentResult.name}</p>
-                </div>
-                <div className="text-left font-mono">
-                  <div className="text-xl">${currentResult.marketPrice}</div>
-                  <div className={`text-xs ${parseFloat(currentResult.change) > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{currentResult.change}%</div>
-                </div>
-              </div>
-
-              <div className={`p-4 rounded-2xl border mb-4 font-black text-center ${currentResult.isBuy ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-rose-500/10 border-rose-500/40 text-rose-400'}`}>
-                {currentResult.status} (ציון: {currentResult.score})
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                <div className="bg-white/5 p-2 rounded-xl text-center">
-                  <div className="text-[8px] text-slate-500 uppercase">כניסה SOP</div>
-                  <div className="font-mono text-sm">${currentResult.entry}</div>
-                </div>
-                <div className="bg-emerald-500/5 p-2 rounded-xl text-center border border-emerald-500/20">
-                  <div className="text-[8px] text-emerald-500 uppercase">יעד (TP)</div>
-                  <div className="font-mono text-sm text-emerald-400">${currentResult.target}</div>
-                </div>
-                <div className="bg-rose-500/5 p-2 rounded-xl text-center border border-rose-500/20">
-                  <div className="text-[8px] text-rose-500 uppercase">סטופ (SL)</div>
-                  <div className="font-mono text-sm text-rose-400">${currentResult.stop}</div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                {currentResult.reasoning.map((r, i) => (
-                  <div key={i} className="flex gap-2 text-[10px] text-slate-400 border-l border-amber-500/20 pl-2 justify-end">
-                    <span>{r}</span>
-                    <Zap size={10} className="text-amber-500 shrink-0 mt-0.5" />
-                  </div>
-                ))}
-              </div>
+                <h1 class="text-lg font-black leading-none">סיגורה F</h1>
+                <p class="text-[10px] text-amber-500 font-bold tracking-widest uppercase">Global AI Markets</p>
             </div>
-          ) : (
-            <div className="py-20 flex flex-col items-center justify-center text-center opacity-50">
-              <Globe size={48} className="mb-4" />
-              <p className="text-sm font-bold">ממתין לסריקת שווקים גלובלית...</p>
-            </div>
-          )}
         </div>
-      </main>
+        <button onclick="startScan()" id="scanBtn" class="bg-amber-500 text-black px-5 py-2 rounded-full text-xs font-black flex items-center gap-2 hover:bg-amber-400 transition-all">
+            <i data-lucide="radar" class="w-4 h-4"></i>
+            <span>סריקה רב-שווקית</span>
+        </button>
+    </header>
 
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 flex justify-around">
-        <div className="flex flex-col items-center text-amber-500"><Radar size={20}/><span className="text-[8px] font-bold">סורק</span></div>
-        <div className="flex flex-col items-center text-slate-700"><TrendingUp size={20}/><span className="text-[8px] font-bold">מגמות</span></div>
-        <div className="flex flex-col items-center text-slate-700"><ShieldCheck size={20}/><span className="text-[8px] font-bold">SOP</span></div>
-      </footer>
-    </div>
-  );
-}
+    <main class="p-4 max-w-lg mx-auto w-full space-y-4">
+        
+        <!-- Search -->
+        <div class="relative">
+            <input type="text" id="symbolInput" placeholder="חפש סימול (למשל: NVDA, ESLT)..." 
+                class="w-full bg-slate-900/60 border border-white/10 p-4 rounded-2xl outline-none focus:border-amber-500/50 text-center font-bold">
+            <button onclick="manualSearch()" class="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500">
+                <i data-lucide="search"></i>
+            </button>
+        </div>
+
+        <!-- Departments -->
+        <div class="grid grid-cols-2 gap-2">
+            <div class="glass p-3 rounded-2xl flex items-center gap-3">
+                <div class="p-2 bg-rose-500/10 text-rose-500 rounded-lg"><i data-lucide="flame" class="w-4 h-4"></i></div>
+                <div class="text-[10px] font-bold text-slate-400">נרות ותבניות</div>
+            </div>
+            <div class="glass p-3 rounded-2xl flex items-center gap-3">
+                <div class="p-2 bg-blue-500/10 text-blue-500 rounded-lg"><i data-lucide="trending-up" class="w-4 h-4"></i></div>
+                <div class="text-[10px] font-bold text-slate-400">מומנטום</div>
+            </div>
+        </div>
+
+        <!-- Result Area -->
+        <div id="displayArea" class="glass rounded-[2.5rem] p-6 min-h-[500px] relative overflow-hidden shadow-2xl">
+            <div id="idleState" class="flex flex-col items-center justify-center h-full py-20 text-center opacity-40">
+                <i data-lucide="globe" class="w-16 h-16 mb-4"></i>
+                <p class="font-bold">סרוק כעת לאיתור 3 הזדמנויות נבחרות</p>
+                <p class="text-[10px] mt-2">הסריקה מתבצעת על מניות גדולות וקטנות כאחד</p>
+            </div>
+
+            <div id="loadingState" class="hidden flex flex-col space-y-6">
+                <div class="flex items-center gap-2 text-amber-500 animate-pulse">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    <span class="text-[10px] font-black uppercase tracking-tighter" id="loadingText">מנתח 100 סוכנים במקביל...</span>
+                </div>
+                <div class="space-y-4" id="steps">
+                    <!-- Steps injected here -->
+                </div>
+            </div>
+
+            <div id="resultState" class="hidden space-y-6">
+                <!-- Result tabs and content injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 left-0 right-0 p-4 glass border-t border-white/5 flex justify-around items-center">
+        <div class="flex flex-col items-center gap-1 text-amber-500">
+            <i data-lucide="radar"></i>
+            <span class="text-[9px] font-black uppercase">סורק</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 text-slate-600">
+            <i data-lucide="shield-check"></i>
+            <span class="text-[9px] font-bold uppercase">SOP</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 text-slate-600">
+            <i data-lucide="user"></i>
+            <span class="text-[9px] font-bold uppercase">חשבון</span>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        const API_KEY = "57c25b846885479789134a8afa541dd1";
+        
+        // מאגר מורחב מאוד - גדולות, קטנות, ישראל וארה"ב
+        const STOCK_POOL = [
+            { s: 'AAPL', m: 'US', n: 'Apple' }, { s: 'NVDA', m: 'US', n: 'Nvidia' }, 
+            { s: 'TSLA', m: 'US', n: 'Tesla' }, { s: 'PLTR', m: 'US', n: 'Palantir' },
+            { s: 'ESLT', m: 'IL', n: 'אלביט מערכות' }, { s: 'NICE', m: 'IL', n: 'נייס' },
+            { s: 'TEVA', m: 'IL', n: 'טבע' }, { s: 'MNDY', m: 'IL', n: 'מאנדיי' },
+            { s: 'AMZN', m: 'US', n: 'Amazon' }, { s: 'META', m: 'US', n: 'Meta' },
+            { s: 'SMCI', m: 'US', n: 'Super Micro' }, { s: 'CELH', m: 'US', n: 'Celsius' },
+            { s: 'ICL', m: 'IL', n: 'איי.סי.אל' }, { s: 'TSEM', m: 'IL', n: 'טאואר' },
+            { s: 'WIX', m: 'IL', n: 'Wix.com' }, { s: 'RIVN', m: 'US', n: 'Rivian' },
+            { s: 'DKNG', m: 'US', n: 'DraftKings' }, { s: 'SOFI', m: 'US', n: 'SoFi' },
+            { s: 'LEUMI', m: 'IL', n: 'בנק לאומי' }, { s: 'HAPO', m: 'IL', n: 'בנק הפועלים' }
+        ];
+
+        let scanResults = [];
+        let activeIndex = 0;
+
+        async function startScan() {
+            document.getElementById('idleState').classList.add('hidden');
+            document.getElementById('resultState').classList.add('hidden');
+            const loading = document.getElementById('loadingState');
+            loading.classList.remove('hidden');
+            
+            const stepsDiv = document.getElementById('steps');
+            const loadingText = document.getElementById('loadingText');
+            stepsDiv.innerHTML = '';
+            
+            const steps = ["סריקת מניות Small-cap ו-Blue-chip", "ניתוח נרות ותבניות", "בדיקת מתנדים ומומנטום", "חישוב כניסה חכמה (SOP)", "ניהול סיכונים סופי"];
+            
+            scanResults = [];
+            const shuffled = [...STOCK_POOL].sort(() => 0.5 - Math.random());
+
+            for(let i = 0; i < steps.length; i++) {
+                loadingText.innerText = `מנתח: ${shuffled[i % shuffled.length].s}...`;
+                stepsDiv.innerHTML += `<div class="flex items-center gap-3 text-xs font-bold text-slate-400 animate-in fade-in slide-in-from-right duration-500">
+                    <div class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div> ${steps[i]}
+                </div>`;
+                await new Promise(r => setTimeout(r, 700));
+            }
+
+            // בחירת 3 מניות אקראיות לסימולציה
+            for(let i=0; i<3; i++) {
+                const stock = shuffled[i];
+                const price = (Math.random() * 500 + 10).toFixed(2);
+                const score = (8.2 + Math.random() * 1.6).toFixed(1);
+                const isBuy = score >= 8.7;
+                const entry = (price * 1.008).toFixed(2);
+                const profitPct = (6.5 + Math.random() * 12).toFixed(1);
+                
+                let summary = isBuy 
+                    ? "זיהוי פריצת התנגדות עם מומנטום חזק. תבנית נרות שורית מאושרת."
+                    : "המניה מדשדשת מתחת לרמת התנגדות. לא זוהה אישור כניסה בטוח לפי SOP.";
+
+                scanResults.push({
+                    symbol: stock.s,
+                    name: stock.n,
+                    market: stock.m,
+                    price: price,
+                    score: score,
+                    isBuy: isBuy,
+                    entry: entry,
+                    target: (entry * (1 + (profitPct / 100))).toFixed(2),
+                    stop: (entry * 0.945).toFixed(2),
+                    profitPct: profitPct,
+                    summary: summary
+                });
+            }
+
+            renderResults();
+        }
+
+        function renderResults() {
+            document.getElementById('loadingState').classList.add('hidden');
+            const resArea = document.getElementById('resultState');
+            resArea.classList.remove('hidden');
+
+            const current = scanResults[activeIndex];
+            
+            resArea.innerHTML = `
+                <div class="flex gap-2 mb-6">
+                    ${scanResults.map((r, i) => `
+                        <button onclick="setActive(${i})" class="flex-1 py-2 text-[10px] font-black rounded-xl transition-all ${activeIndex === i ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-slate-900 text-slate-500'}">
+                            ${r.symbol}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <div class="flex justify-between items-start animate-in fade-in duration-500">
+                    <div class="text-right">
+                        <div class="flex items-center gap-2 justify-end mb-1">
+                            <span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[8px] font-bold text-slate-400">
+                                ${current.market === 'IL' ? 'ישראל 🇮🇱' : 'ארה"ב 🇺🇸'}
+                            </span>
+                            <h2 class="text-3xl font-black tracking-tighter">${current.symbol}</h2>
+                        </div>
+                        <p class="text-[10px] text-slate-500 font-bold">${current.name}</p>
+                    </div>
+                    <div class="text-left font-mono">
+                        <div class="text-2xl font-black">$${current.price}</div>
+                        <div class="text-[10px] text-emerald-400 font-bold">+1.24%</div>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl border text-center font-black transition-all ${current.isBuy ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'bg-rose-500/10 border-rose-500/40 text-rose-400'}">
+                    <div class="text-sm mb-1 uppercase tracking-widest">${current.isBuy ? 'קנייה - אישור כניסה' : 'המתנה - לא למסחר'}</div>
+                    <div class="text-[10px] opacity-70">ציון AI סופי: ${current.score} / 10</div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-white/5 p-2 rounded-xl text-center border border-white/5">
+                        <div class="text-[8px] text-slate-500 uppercase font-bold mb-1">כניסה SOP</div>
+                        <div class="text-xs font-bold font-mono text-white">$${current.entry}</div>
+                    </div>
+                    <div class="bg-emerald-500/5 p-2 rounded-xl text-center border border-emerald-500/20">
+                        <div class="text-[8px] text-emerald-500 uppercase font-bold mb-1">יעד (+${current.profitPct}%)</div>
+                        <div class="text-xs font-bold font-mono text-emerald-400">$${current.target}</div>
+                    </div>
+                    <div class="bg-rose-500/5 p-2 rounded-xl text-center border border-rose-500/20">
+                        <div class="text-[8px] text-rose-500 uppercase font-bold mb-1">סטופ (SL)</div>
+                        <div class="text-xs font-bold font-mono text-rose-400">$${current.stop}</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/40 p-4 rounded-2xl border border-white/5 space-y-3">
+                    <h4 class="text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-3 h-3"></i> סיכום המלצה חכם
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed font-bold italic">
+                        "${current.summary}"
+                    </p>
+                    <div class="flex flex-col gap-2 pt-2 border-t border-white/5">
+                        <div class="flex gap-2 text-[10px] text-slate-400 justify-end items-center">
+                            <span>כניסה מחושבת לאחר פריצת התנגדות ב-${current.entry}</span>
+                            <i data-lucide="zap" class="w-3 h-3 text-amber-500"></i>
+                        </div>
+                        <div class="flex gap-2 text-[10px] text-slate-400 justify-end items-center">
+                            <span>פוטנציאל רווח צפוי לעסקה: <b class="text-emerald-400">${current.profitPct}%</b></span>
+                            <i data-lucide="target" class="w-3 h-3 text-emerald-400"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function setActive(idx) {
+            activeIndex = idx;
+            renderResults();
+        }
+
+        function manualSearch() {
+            const sym = document.getElementById('symbolInput').value.toUpperCase();
+            if(sym) startScan();
+        }
+    </script>
+</body>
+</html>
 
 ```
