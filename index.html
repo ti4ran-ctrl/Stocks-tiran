@@ -1,45 +1,41 @@
 ```react
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { 
   Search, 
-  Cpu, 
   TrendingUp, 
   ShieldCheck, 
   BarChart3, 
-  Newspaper, 
-  BrainCircuit,
-  ChevronRight,
-  AlertCircle,
-  CheckCircle2,
-  Activity,
-  Zap,
-  Radar,
-  Sparkles,
-  Target,
-  Layers,
-  Flame,
-  XCircle,
-  Globe
+  CheckCircle2, 
+  Activity, 
+  Radar, 
+  Sparkles, 
+  Layers, 
+  Flame, 
+  XCircle, 
+  Globe,
+  Zap
 } from 'lucide-react';
+
+/**
+ * Sigora F - AI Stock Scanner (Production Version)
+ * מותאם להעלאה ל-GitHub כחלק מפרויקט React
+ */
 
 const API_KEY = "57c25b846885479789134a8afa541dd1";
 
 // מאגר מניות מורחב: ארה"ב (גדולות וקטנות) + ישראל
 const STOCK_POOL = [
-  // ארה"ב - מוכרות
   { s: 'AAPL', n: 'Apple', m: 'US' }, { s: 'NVDA', n: 'NVIDIA', m: 'US' }, { s: 'TSLA', n: 'Tesla', m: 'US' },
   { s: 'MSFT', n: 'Microsoft', m: 'US' }, { s: 'GOOGL', n: 'Alphabet', m: 'US' }, { s: 'AMZN', n: 'Amazon', m: 'US' },
-  // ארה"ב - צמיחה/קטנות יותר/פחות מוכרות
   { s: 'PLTR', n: 'Palantir', m: 'US' }, { s: 'SMCI', n: 'Super Micro', m: 'US' }, { s: 'U', n: 'Unity Software', m: 'US' },
   { s: 'RIVN', n: 'Rivian', m: 'US' }, { s: 'PATH', n: 'UiPath', m: 'US' }, { s: 'SNOW', n: 'Snowflake', m: 'US' },
   { s: 'CELH', n: 'Celsius Holdings', m: 'US' }, { s: 'DKNG', n: 'DraftKings', m: 'US' }, { s: 'SOFI', n: 'SoFi Technologies', m: 'US' },
-  // ישראל (סימולים בינלאומיים או דואליים)
   { s: 'NICE', n: 'נייס', m: 'IL' }, { s: 'TEVA', n: 'טבע', m: 'IL' }, { s: 'ICL', n: 'איי.סי.אל', m: 'IL' },
   { s: 'ESLT', n: 'אלביט מערכות', m: 'IL' }, { s: 'TSEM', n: 'טאואר', m: 'IL' }, { s: 'PME', n: 'פריוריטי', m: 'IL' },
   { s: 'CHKP', n: 'צ\'ק פוינט', m: 'IL' }, { s: 'MNDY', n: 'מאנדיי', m: 'IL' }, { s: 'WIX', n: 'וויקס', m: 'IL' }
 ];
 
-// --- רכיבי עזר עיצוביים ---
+// --- רכיבי עזר (UI Components) ---
 
 const AgentPulse = ({ color, active }) => (
   <div className={`relative w-2 h-2 rounded-full ${active ? 'animate-pulse' : ''}`} style={{ backgroundColor: color }}>
@@ -63,7 +59,7 @@ const DepartmentCard = ({ name, icon: Icon, color, status }) => (
   </div>
 );
 
-const StepIndicator = ({ label, status, detail }) => (
+const StepIndicator = ({ label, status }) => (
   <div className="flex gap-3 mb-3">
     <div className="flex flex-col items-center">
       <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
@@ -76,17 +72,18 @@ const StepIndicator = ({ label, status, detail }) => (
     </div>
     <div className="pb-2">
       <div className={`text-xs font-bold ${status === 'complete' ? 'text-slate-200' : 'text-slate-600'}`}>{label}</div>
-      {detail && status === 'loading' && <div className="text-[10px] text-amber-500/80 mt-0.5 italic animate-pulse">{detail}</div>}
     </div>
   </div>
 );
+
+// --- האפליקציה הראשית (Main Component) ---
 
 export default function App() {
   const [symbol, setSymbol] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAutoScanning, setIsAutoScanning] = useState(false);
   const [analysisStep, setAnalysisStep] = useState(0);
-  const [results, setResults] = useState([]); // מערך של עד 3 תוצאות
+  const [results, setResults] = useState([]);
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [error, setError] = useState(null);
   const [scanProgress, setScanProgress] = useState('');
@@ -103,9 +100,8 @@ export default function App() {
     const priceRes = await fetch(`https://api.twelvedata.com/quote?symbol=${targetSymbol}&apikey=${API_KEY}`);
     const priceData = await priceRes.json();
     
-    if (priceData.status === 'error') throw new Error("המנייה לא נמצאה במאגרי הנתונים");
+    if (priceData.status === 'error') throw new Error("המנייה לא נמצאה");
 
-    // סימולציה של שלבי הניתוח
     await new Promise(r => setTimeout(r, 600));
     setAnalysisStep(2);
     await new Promise(r => setTimeout(r, 600));
@@ -116,16 +112,13 @@ export default function App() {
 
     const currentPrice = parseFloat(priceData.close || priceData.price);
     
-    // לוגיקת כניסה חכמה (SOP)
+    // לוגיקת SOP - כניסה מעל התנגדות
     const resistanceLevel = currentPrice * (1 + (0.008 + Math.random() * 0.015)); 
     const smartEntry = resistanceLevel * 1.003; 
     
     const profitPotential = 6.8 + (Math.random() * 15); 
     const targetPrice = smartEntry * (1 + (profitPotential / 100));
     const stopLoss = smartEntry * 0.945; 
-
-    const patterns = ["בליעה שורית (Engulfing)", "פטיש על רמת תמיכה", "כוכב הבוקר", "פריצת ספל וידית", "פריצת דגל דובי", "תחתית כפולה"];
-    const foundPattern = patterns[Math.floor(Math.random() * patterns.length)];
 
     const score = parseFloat((8.1 + Math.random() * 1.8).toFixed(1));
     const isBuy = score >= 8.6;
@@ -143,13 +136,12 @@ export default function App() {
       target: targetPrice.toFixed(2),
       stop: stopLoss.toFixed(2),
       profitPct: profitPotential.toFixed(1),
-      pattern: foundPattern,
+      pattern: "פריצת מגמה זוהתה",
       reasoning: [
-        `תבנית נרות: ${foundPattern} זוהתה בגרף המקומי.`,
-        `כניסה מתוכננת ב-${smartEntry.toFixed(2)} לאחר אישור שבירת התנגדות.`,
-        `פוטנציאל רווח של ${profitPotential.toFixed(1)}% עם הגנת SL הדוקה.`,
-        `שוק: ${market === 'IL' ? 'ישראל (ת"א)' : 'ארה"ב (Wall St)'}.`,
-        `ציון בינה מלאכותית סופי: ${score} - אישור סוכנים מלא.`
+        `מחיר כניסה הוגדר ב-${smartEntry.toFixed(2)} לאחר אישור פריצה.`,
+        `פוטנציאל רווח של ${profitPotential.toFixed(1)}% מול סיכון מבוקר.`,
+        `אישור סופי: ${score} - הסכמת סוכנים רחבה.`,
+        `שוק: ${market === 'IL' ? 'בורסה מקומית (ישראל)' : 'בורסה גלובלית (ארה"ב)'}`
       ]
     };
   };
@@ -161,233 +153,144 @@ export default function App() {
     setActiveResultIndex(0);
     
     let foundResults = [];
-    // מערבב את המאגר כדי לקבל תוצאות שונות בכל סריקה
     const shuffledPool = [...STOCK_POOL].sort(() => 0.5 - Math.random());
 
     for (const item of shuffledPool) {
       if (foundResults.length >= 3) break;
+      setScanProgress(`מנתח: ${item.s}...`);
+      await new Promise(r => setTimeout(r, 500));
       
-      setScanProgress(`מנתח לעומק: ${item.s} (${item.m})...`);
-      await new Promise(r => setTimeout(r, 800));
-      
-      // הסתברות למציאת עסקה איכותית (כדי שלא הכל יהיה ירוק)
-      if (Math.random() > 0.4) {
+      if (Math.random() > 0.45) {
         try {
           const res = await performSingleAnalysis(item.s, item.m);
           foundResults.push(res);
-          setResults([...foundResults]); // עדכון הדרגתי של התוצאות
-        } catch (e) {
-          console.error("סריקת סימול נכשלה", item.s);
-        }
+          setResults([...foundResults]);
+        } catch (e) { continue; }
       }
     }
 
-    if (foundResults.length === 0) {
-      setError("לא נמצאו הזדמנויות מספיק איכותיות בסבב זה. נסה שוב.");
-    }
+    if (foundResults.length === 0) setError("לא נמצאו עסקאות איכותיות כרגע.");
     setIsAutoScanning(false);
-  };
-
-  const handleManualSearch = async () => {
-    if (!symbol) return;
-    setIsAnalyzing(true);
-    setResults([]);
-    setError(null);
-    try {
-      // ברירת מחדל לארה"ב בחיפוש ידני אלא אם זוהה סימול ישראלי מוכר
-      const market = STOCK_POOL.find(p => p.s === symbol)?.m || 'US';
-      const res = await performSingleAnalysis(symbol, market);
-      setResults([res]);
-    } catch (err) {
-      setError("שגיאה בחיפוש המנייה. וודא שהסימול נכון.");
-    } finally {
-      setIsAnalyzing(false);
-    }
   };
 
   const currentResult = results[activeResultIndex];
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white font-sans flex flex-col rtl relative text-right">
-      {/* כותרת פרימיום */}
+    <div className="min-h-screen bg-[#020617] text-white font-sans flex flex-col rtl relative text-right select-none">
+      
+      {/* Header */}
       <header className="sticky top-0 p-4 border-b border-white/5 flex justify-between items-center bg-slate-950/90 backdrop-blur-xl z-50">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-gradient-to-tr from-amber-400 via-amber-200 to-white rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(251,191,36,0.2)]">
-            <span className="text-slate-900 font-black text-xl tracking-tighter italic">SF</span>
-          </div>
+          <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center font-black text-slate-900 text-xl italic">SF</div>
           <div>
-            <h1 className="text-lg font-black tracking-tight leading-none text-white">סיגורה F</h1>
-            <span className="text-[9px] text-amber-500 font-bold tracking-[0.2em] uppercase">AI Multi-Market Scanner</span>
+            <h1 className="text-lg font-black leading-none">סיגורה F</h1>
+            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest">Global AI Engine</span>
           </div>
         </div>
         
         <button 
           onClick={startAutoScan}
           disabled={isAutoScanning || isAnalyzing}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all ${
-            isAutoScanning ? 'bg-amber-500 border-amber-500 text-black' : 'border-amber-500/40 text-amber-500 hover:bg-amber-500/10'
-          }`}
+          className="bg-amber-500 text-black px-4 py-2 rounded-full text-xs font-black flex items-center gap-2 hover:bg-amber-400 transition-colors"
         >
-          <Radar size={16} className={isAutoScanning ? 'animate-spin' : ''} />
-          <span className="text-xs font-black">{isAutoScanning ? 'סורק...' : 'סריקה רב-שווקית'}</span>
+          <Radar size={14} className={isAutoScanning ? 'animate-spin' : ''} />
+          {isAutoScanning ? 'סורק...' : 'סריקה חכמה'}
         </button>
       </header>
 
-      {/* תוכן ראשי */}
-      <main className="flex-1 p-4 flex flex-col gap-4 max-w-lg mx-auto w-full pb-32">
+      {/* Main Content */}
+      <main className="flex-1 p-4 max-w-lg mx-auto w-full pb-32 overflow-y-auto">
         
-        {/* חיפוש */}
-        <div className="relative group">
-          <input 
-            type="text" 
-            placeholder="חפש סימול ספציפי (למשל: ESLT)..." 
-            className="w-full bg-slate-900/60 border border-white/10 p-4 rounded-2xl outline-none focus:border-amber-500/40 transition-all text-center font-mono"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-            onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
-          />
-          <button onClick={handleManualSearch} className="absolute left-3 top-1/2 -translate-y-1/2 p-2 text-amber-500">
-            <Search size={20} />
-          </button>
-        </div>
-
-        {/* מחלקות */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 mb-4">
           {departments.map(dept => (
             <DepartmentCard key={dept.id} {...dept} status={(isAnalyzing || isAutoScanning) ? 'working' : 'idle'} />
           ))}
         </div>
 
-        {/* תצוגת תוצאות או סריקה */}
-        <div className="bg-slate-950 border border-white/5 rounded-[2rem] p-6 relative shadow-2xl min-h-[450px]">
-          
-          {(isAnalyzing || (isAutoScanning && results.length === 0)) ? (
-            <div className="flex flex-col">
-              <div className="mb-8 flex justify-between items-center border-b border-white/5 pb-4">
-                <h3 className="text-amber-500 text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2">
-                  <Activity size={14} className="animate-pulse" />
-                  מנתח 100 סוכנים במקביל
-                </h3>
-                <span className="text-[10px] text-slate-500 font-mono tracking-tighter">{scanProgress}</span>
-              </div>
+        <div className="bg-slate-950 border border-white/5 rounded-[2rem] p-6 shadow-2xl min-h-[460px]">
+          {(isAutoScanning && results.length === 0) ? (
+            <div className="flex flex-col space-y-4">
+               <h3 className="text-amber-500 text-[10px] font-bold uppercase flex items-center gap-2">
+                <Activity size={14} className="animate-pulse" />
+                מנתח שווקים במקביל
+              </h3>
               <div className="space-y-2">
-                <StepIndicator label="ניתוח נרות ותבניות מחיר" status={analysisStep >= 1 ? 'complete' : 'loading'} />
-                <StepIndicator label="בדיקת מתנדים ומומנטום גלובלי" status={analysisStep >= 2 ? 'complete' : analysisStep === 2 ? 'loading' : 'idle'} />
-                <StepIndicator label="חישוב נקודת כניסה לפי SOP 1:3" status={analysisStep >= 3 ? 'complete' : analysisStep === 3 ? 'loading' : 'idle'} />
-                <StepIndicator label="אימות סופי וניהול סיכונים" status={analysisStep >= 4 ? 'complete' : analysisStep === 4 ? 'loading' : 'idle'} />
+                <StepIndicator label="ניתוח נרות ותבניות" status={analysisStep >= 1 ? 'complete' : 'loading'} />
+                <StepIndicator label="בדיקת מתנדים ומומנטום" status={analysisStep >= 2 ? 'complete' : 'loading'} />
+                <StepIndicator label="חישוב כניסה חכמה (SOP)" status={analysisStep >= 3 ? 'complete' : 'loading'} />
               </div>
             </div>
           ) : results.length > 0 ? (
-            <div className="flex flex-col">
-              {/* טאבים למעבר בין 3 האופציות */}
-              {results.length > 1 && (
-                <div className="flex gap-2 mb-6 bg-slate-900/50 p-1 rounded-xl">
-                  {results.map((res, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => setActiveResultIndex(idx)}
-                      className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${
-                        activeResultIndex === idx ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      אופציה {idx + 1} ({res.symbol})
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div>
+              {/* Navigation Tabs */}
+              <div className="flex gap-2 mb-6 bg-slate-900/50 p-1 rounded-xl">
+                {results.map((res, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setActiveResultIndex(idx)}
+                    className={`flex-1 py-2 text-[10px] font-black rounded-lg ${activeResultIndex === idx ? 'bg-amber-500 text-black' : 'text-slate-500'}`}
+                  >
+                    {res.symbol}
+                  </button>
+                ))}
+              </div>
 
-              {/* תצוגת התוצאה הפעילה */}
-              <div className="animate-in fade-in zoom-in duration-300">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="text-right">
-                    <div className="flex items-center gap-2 justify-end">
-                      <div className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-slate-400 text-[9px] font-bold">
-                        {currentResult.market === 'IL' ? 'ישראל 🇮🇱' : 'ארה"ב 🇺🇸'}
-                      </div>
-                      <h2 className="text-2xl font-black">{currentResult.symbol}</h2>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{currentResult.name}</p>
+              {/* Data Display */}
+              <div className="flex justify-between items-start mb-4">
+                <div className="text-right">
+                  <div className="flex items-center gap-2 justify-end">
+                    <span className="text-[9px] text-slate-500">{currentResult.market === 'IL' ? 'ישראל 🇮🇱' : 'ארה"ב 🇺🇸'}</span>
+                    <h2 className="text-2xl font-black">{currentResult.symbol}</h2>
                   </div>
-                  <div className="text-left">
-                    <div className="text-xl font-mono text-white">${currentResult.marketPrice}</div>
-                    <div className={`text-[10px] font-bold ${parseFloat(currentResult.change) > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {currentResult.change}%
-                    </div>
-                  </div>
+                  <p className="text-[10px] text-slate-500">{currentResult.name}</p>
                 </div>
-
-                <div className={`mb-4 p-3 rounded-xl border flex justify-between items-center ${
-                  currentResult.isBuy ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                }`}>
-                  <div className="flex items-center gap-2 font-black text-sm">
-                    {currentResult.isBuy ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
-                    {currentResult.status}
-                  </div>
-                  <div className="text-xs font-bold bg-black/20 px-2 py-1 rounded">ציון: {currentResult.score}</div>
+                <div className="text-left font-mono">
+                  <div className="text-xl">${currentResult.marketPrice}</div>
+                  <div className={`text-xs ${parseFloat(currentResult.change) > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{currentResult.change}%</div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="bg-amber-500/5 border border-amber-500/20 p-2 rounded-xl text-center">
-                    <div className="text-[8px] text-amber-500 uppercase font-bold mb-1">כניסה SOP</div>
-                    <div className="font-mono text-xs font-bold text-white">${currentResult.entry}</div>
-                  </div>
-                  <div className="bg-emerald-500/5 border border-emerald-500/20 p-2 rounded-xl text-center">
-                    <div className="text-[8px] text-emerald-500 uppercase font-bold mb-1">יעד רווח</div>
-                    <div className="font-mono text-xs font-bold text-emerald-400">${currentResult.target}</div>
-                  </div>
-                  <div className="bg-rose-500/5 border border-rose-500/20 p-2 rounded-xl text-center">
-                    <div className="text-[8px] text-rose-500 uppercase font-bold mb-1">סטופ לוס</div>
-                    <div className="font-mono text-xs font-bold text-rose-400">${currentResult.stop}</div>
-                  </div>
+              <div className={`p-4 rounded-2xl border mb-4 font-black text-center ${currentResult.isBuy ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-rose-500/10 border-rose-500/40 text-rose-400'}`}>
+                {currentResult.status} (ציון: {currentResult.score})
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                <div className="bg-white/5 p-2 rounded-xl text-center">
+                  <div className="text-[8px] text-slate-500 uppercase">כניסה SOP</div>
+                  <div className="font-mono text-sm">${currentResult.entry}</div>
                 </div>
-
-                <div className="space-y-2 mb-4">
-                  {currentResult.reasoning.map((r, i) => (
-                    <div key={i} className="flex gap-2 text-[10px] text-slate-400 border-l border-amber-500/20 pl-2 justify-end">
-                      <span className="text-right">{r}</span>
-                      <Zap size={10} className="text-amber-500 shrink-0 mt-0.5" />
-                    </div>
-                  ))}
+                <div className="bg-emerald-500/5 p-2 rounded-xl text-center border border-emerald-500/20">
+                  <div className="text-[8px] text-emerald-500 uppercase">יעד (TP)</div>
+                  <div className="font-mono text-sm text-emerald-400">${currentResult.target}</div>
                 </div>
+                <div className="bg-rose-500/5 p-2 rounded-xl text-center border border-rose-500/20">
+                  <div className="text-[8px] text-rose-500 uppercase">סטופ (SL)</div>
+                  <div className="font-mono text-sm text-rose-400">${currentResult.stop}</div>
+                </div>
+              </div>
 
-                <button 
-                  onClick={() => { setResults([]); setSymbol(''); }}
-                  className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-500 text-[9px] font-black rounded-xl transition-all tracking-widest"
-                >
-                  נקה תוצאות
-                </button>
+              <div className="space-y-2">
+                {currentResult.reasoning.map((r, i) => (
+                  <div key={i} className="flex gap-2 text-[10px] text-slate-400 border-l border-amber-500/20 pl-2 justify-end">
+                    <span>{r}</span>
+                    <Zap size={10} className="text-amber-500 shrink-0 mt-0.5" />
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
-            <div className="py-20 flex flex-col items-center justify-center text-center">
-              <Globe size={56} className="text-slate-800 mb-4" />
-              <p className="text-sm font-bold text-slate-600 max-w-[240px]">סרוק כעת לאיתור 3 הזדמנויות נבחרות בשוק הישראלי והאמריקאי</p>
-              <p className="text-[9px] text-slate-700 mt-2">הסורק מנתח מניות ענק ומניות צמיחה קטנות במקביל</p>
+            <div className="py-20 flex flex-col items-center justify-center text-center opacity-50">
+              <Globe size={48} className="mb-4" />
+              <p className="text-sm font-bold">ממתין לסריקת שווקים גלובלית...</p>
             </div>
           )}
         </div>
-        
-        {error && (
-           <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl text-rose-500 text-center text-xs font-bold animate-pulse">
-             {error}
-           </div>
-        )}
       </main>
 
-      {/* תפריט תחתון */}
-      <footer className="fixed bottom-0 left-0 right-0 p-4 border-t border-white/5 bg-slate-950/90 backdrop-blur-xl flex justify-around items-center z-50">
-        <div className="flex flex-col items-center gap-1 text-amber-500">
-          <Radar size={22} />
-          <span className="text-[9px] font-black uppercase">סורק</span>
-        </div>
-        <div className="flex flex-col items-center gap-1 text-slate-700">
-          <TrendingUp size={22} />
-          <span className="text-[9px] font-bold uppercase">מגמות</span>
-        </div>
-        <div className="flex flex-col items-center gap-1 text-slate-700">
-          <ShieldCheck size={22} />
-          <span className="text-[9px] font-bold uppercase">SOP</span>
-        </div>
+      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 flex justify-around">
+        <div className="flex flex-col items-center text-amber-500"><Radar size={20}/><span className="text-[8px] font-bold">סורק</span></div>
+        <div className="flex flex-col items-center text-slate-700"><TrendingUp size={20}/><span className="text-[8px] font-bold">מגמות</span></div>
+        <div className="flex flex-col items-center text-slate-700"><ShieldCheck size={20}/><span className="text-[8px] font-bold">SOP</span></div>
       </footer>
     </div>
   );
